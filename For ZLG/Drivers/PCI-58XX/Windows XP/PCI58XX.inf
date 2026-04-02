@@ -1,0 +1,123 @@
+;; PCI58XX.inf
+
+;; *********  PLEASE READ ***********
+;; The wizard cannot create exact INF files for all buses and device types.
+;; You may have to make changes to this file in order to get your device to
+;; install. In particular, hardware IDs and logical configurations require
+;; intervention.
+;;
+;; The Windows DDK documentation contains an excellent INF reference.
+
+;--------- Version Section ---------------------------------------------------
+
+[Version]
+Signature="$CHICAGO$"
+
+; If device fits one of the standard classes, use the name and GUID here,
+; otherwise create your own device class and GUID as this example shows.
+
+Class=EmbedDevice
+ClassGUID={ee646f80-8def-11d2-9449-00105a075f6b}
+Provider=%ProviderName%
+
+
+;--------- SourceDiskNames and SourceDiskFiles Section -----------------------
+
+; These sections identify source disks and files for installation.  They are
+; shown here as an example, but commented out.
+
+;[SourceDisksNames]
+;1 = "Install Disk",Disk1,,
+
+;[SourceDisksFiles]
+;PCI58XX.sys = 1,,
+
+;--------- ClassInstall/ClassInstall32 Section -------------------------------
+
+; Not necessary if using a standard class
+
+; 9X Style
+[ClassInstall]
+Addreg=Class_AddReg
+
+; NT Style
+[ClassInstall32]
+Addreg=Class_AddReg
+
+[Class_AddReg]
+HKR,,,,%DeviceClassName%
+HKR,,Icon,,"-5"
+
+;--------- DestinationDirs Section -------------------------------------------
+
+[DestinationDirs]
+PCI58XX_Files_Driver = 10,System32\Drivers
+
+;--------- Manufacturer and Models Sections ----------------------------------
+
+[Manufacturer]
+%MfgName%=Mfg0
+
+[Mfg0]
+
+; PCI hardware IDs use the form
+;   PCI\VEN_aaaa&DEV_bbbb&SUBSYS_cccccccc&REV_dd
+;
+
+%PCI-58XX%=PCI58XX_DDI, PCI\VEN_10b5&DEV_9050&SUBSYS_905010b5&REV_02
+
+;---------- DDInstall Sections -----------------------------------------------
+; --------- Windows 9X -----------------
+
+; Experimentation has shown that DDInstall root names greater than 19 characters
+; cause problems in Windows 98
+
+
+
+
+
+;PCI-58XX
+[PCI58XX_DDI]
+CopyFiles=PCI58XX_Files_Driver
+AddReg=PCI58XX_9X_AddReg
+
+[PCI58XX_9X_AddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,PCI58XX.sys
+HKR, "Parameters", "BreakOnEntry", 0x00010001, 0
+; --------- Windows NT -----------------
+
+[PCI58XX_DDI.NT]
+CopyFiles=PCI58XX_Files_Driver
+AddReg=PCI58XX_NT_AddReg
+
+[PCI58XX_DDI.NT.Services]
+Addservice = PCI58XX, 0x00000002, PCI58XX_AddService
+
+[PCI58XX_AddService]
+DisplayName    = %PCI-58XX%
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %10%\System32\Drivers\PCI58XX.sys
+
+[PCI58XX_NT_AddReg]
+HKLM, "System\CurrentControlSet\Services\PCI58XX\Parameters",\
+	"BreakOnEntry", 0x00010001, 0
+
+
+; --------- Files (common) -------------
+
+[PCI58XX_Files_Driver]
+PCI58XX.sys
+
+
+
+;--------- Strings Section ---------------------------------------------------
+
+[Strings]
+ProviderName="www.embedded-soc.com"
+MfgName="www.embedded-soc.com"
+PCI-58XX="PCI-58XX PCICAN Communication Card"
+DeviceClassName="PCI CAN"
+
