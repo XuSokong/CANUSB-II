@@ -5,13 +5,118 @@ CAN USB 上位机软件
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import threading
 import time
+import os
 from datetime import datetime
 from typing import Optional, Callable
 
 from can_interface import CANInterface, VCI_INIT_CONFIG, VCI_CAN_OBJ, bytes_to_hex, hex_to_bytes
+
+
+class CANLogger:
+    """CAN数据日志记录器 - 自动记录收发数据到文件"""
+    
+    def __init__(self, log_dir: str = None):
+        """
+        初始化日志记录器
+        
+        Args:
+            log_dir: 日志文件夹路径，默认为程序所在目录下的log文件夹
+        """
+        if log_dir is None:
+            # 获取程序所在目录
+            program_dir = os.path.dirname(os.path.abspath(__file__))
+            self.log_dir = os.path.join(program_dir, 'log')
+        else:
+            self.log_dir = log_dir
+        
+        # 创建日志文件夹
+        os.makedirs(self.log_dir, exist_ok=True)
+        
+        # 生成日志文件名（格式：YYYYMMDD_received.log）
+        today = datetime.now().strftime('%Y%m%d')
+        self.log_file = os.path.join(self.log_dir, f'{today}_received.log')
+        
+        # 文件句柄
+        self._file = None
+        self._lock = threading.Lock()
+    
+    def open(self):
+        """打开日志文件"""
+        with self._lock:
+            if self._file is None:
+                self._file = open(self.log_file, 'a', encoding='utf-8')
+    
+    def close(self):
+        """关闭日志文件"""
+        with self._lock:
+            if self._file:
+                self._file.close()
+                self._file = None
+    
+    def log(self, msg_type: str, frame_id: str, frame_format: str,
+            data_type: str, length: int, data: str):
+        """
+        记录一条CAN消息
+
+        Args:
+            msg_type: 消息类型（发送/接收）
+            frame_id: 帧ID
+            frame_format: 帧格式（标准帧/扩展帧）
+            data_type: 数据类型（数据帧/远程帧）
+            length: 数据长度
+            data: 数据内容（十六进制字符串）
+        """
+        with self._lock:
+            if self._file:
+                now = datetime.now()
+                date_str = now.strftime('%Y-%m-%d')
+                time_str = now.strftime('%H:%M:%S.%f')[:-3]
+                # 格式化帧ID为十六进制
+                try:
+                    frame_id_hex = f"0x{int(frame_id, 16):X}"
+                except (ValueError, TypeError):
+                    frame_id_hex = f"0x{frame_id}"
+                log_line = f"| {date_str} | {time_str} | {msg_type} | 帧ID | {frame_id_hex} | " \
+                          f"{frame_format} | {data_type} | 长度 | {length} | 数据 | {data} |\n"
+                self._file.write(log_line)
+                self._file.flush()
+    
+    def __enter__(self):
+        self.open()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
+
+
+class FileDialog(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        self.title("文件对话框")
+        self.geometry("300x150")
+        self.resizable(False, False)
+        self.create_widgets()
+    def create_widgets(self):
+        self.label = ttk.Label(self, text="请选择要操作的文件")
+        self.label.pack(pady=10)
+        self.entry = ttk.Entry(self, width=30)
+        self.entry.pack(pady=10)
+        self.btn = ttk.Button(self, text="选择文件", command=self._on_file_select)
+        self.btn.pack(pady=10)
+    def _on_file_select(self):
+        """选择文件"""
+        self.filename = filedialog.askopenfilename()
+        self.entry.delete(0, tk.END)
+        self.entry.insert(0, self.filename)
+        self.destroy()
+    def get_filename(self):
+        """获取选择的文件名"""
+        return self.filename
 
 
 class CANController:
@@ -190,6 +295,10 @@ class CANHostGUI:
         self._create_widgets()
         self._create_menu()
         self._layout_widgets()
+        
+        # 初始化日志记录器
+        self.logger = CANLogger()
+        self.logger.open()  # 程序启动时自动打开日志
         
         # 状态更新定时器
         self._update_status()
@@ -615,11 +724,11 @@ class CANHostGUI:
         """错误回调"""
         self.root.after(0, lambda: messagebox.showerror("错误", error_msg))
     
-    def _add_message_to_display(self, msg_type: str, frame_id: str, frame_format: str, 
+    def _add_message_to_display(self, msg_type: str, frame_id: str, frame_format: str,
                                  data_type: str, length: int, data: str):
         """添加消息到显示表格（向下更新，新数据在底部）"""
         current_time = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        
+
         # 在末尾插入新数据（向下更新）
         self.tree_data.insert('', 'end', values=(
             current_time,
@@ -630,18 +739,22 @@ class CANHostGUI:
             length,
             data
         ))
-        
+
         # 限制显示行数，删除最旧的数据（顶部）
         children = self.tree_data.get_children()
         if len(children) > 1000:
             self.tree_data.delete(children[0])
-        
+
         # 自动滚动到最新数据
         try:
             last_item = self.tree_data.get_children()[-1]
             self.tree_data.see(last_item)
         except (IndexError, tk.TclError):
             pass
+
+        # 记录到日志文件
+        if hasattr(self, 'logger') and self.logger:
+            self.logger.log(msg_type, frame_id, frame_format, data_type, length, data)
     
     def _on_clear_display(self):
         """清空显示"""
@@ -667,9 +780,35 @@ class CANHostGUI:
         """窗口关闭处理"""
         if self.controller.is_connected:
             self._do_disconnect()
+        # 关闭日志文件
+        if hasattr(self, 'logger') and self.logger:
+            self.logger.close()
         self.root.destroy()
 
-
+class FileDialog(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        self.title("文件对话框")
+        self.geometry("300x150")
+        self.resizable(False, False)
+        self.create_widgets()
+    def create_widgets(self):
+        self.label = ttk.Label(self, text="请选择要操作的文件")
+        self.label.pack(pady=10)
+        self.entry = ttk.Entry(self, width=30)
+        self.entry.pack(pady=10)
+        self.btn = ttk.Button(self, text="选择文件", command=self._on_file_select)
+        self.btn.pack(pady=10)
+    def _on_file_select(self):
+        """选择文件"""
+        self.filename = filedialog.askopenfilename()
+        self.entry.delete(0, tk.END)
+        self.entry.insert(0, self.filename)
+        self.destroy()
+    def get_filename(self):
+        """获取选择的文件名"""
+        return self.filename
 def main():
     """主函数"""
     root = tk.Tk()
