@@ -309,7 +309,13 @@ class CANHostGUI:
         self.frame_connection = ttk.LabelFrame(self.root, text="设备连接", padding=10)
         
         self.btn_connect_toggle = ttk.Button(self.frame_connection, text="连接设备", command=self._on_toggle_connection, width=12)
-        self.btn_connect_toggle.pack(padx=20, pady=5)
+        self.btn_connect_toggle.pack(side=tk.LEFT, padx=20, pady=5)
+        
+        # 时间按钮 - 发送固定时间数据
+        self.btn_time = ttk.Button(self.frame_connection, text="时间", 
+                                   command=lambda: self._on_send_cmd(0x00F, "00 02 03 04 05 06 00 01"), 
+                                   state=tk.DISABLED, width=10)
+        self.btn_time.pack(side=tk.LEFT, padx=10, pady=5)
         
         # 初始化通信设置默认值（用于对话框）
         self._comm_settings = {
@@ -376,9 +382,14 @@ class CANHostGUI:
         self.tree_data.grid(row=0, column=0, sticky=tk.NSEW)
         scrollbar_y.grid(row=0, column=1, sticky=tk.NS)
         scrollbar_x.grid(row=1, column=0, sticky=tk.EW)
-        
+
         self.frame_data.grid_rowconfigure(0, weight=1)
         self.frame_data.grid_columnconfigure(0, weight=1)
+
+        # 绑定复制快捷键和右键菜单
+        self.tree_data.bind('<Control-c>', self._on_copy_selection)
+        self.tree_data.bind('<Control-C>', self._on_copy_selection)
+        self._create_context_menu()
         
         # 状态栏框架
         self.frame_status = ttk.Frame(self.root, padding=5, relief=tk.SUNKEN, borderwidth=1)
@@ -599,6 +610,7 @@ class CANHostGUI:
             
             self.btn_send.config(state=tk.DISABLED)
             self.btn_clear_buffer.config(state=tk.DISABLED)
+            self.btn_time.config(state=tk.DISABLED)  # 禁用时间按钮
             
             # 更新状态栏
             self.lbl_status_info.config(text="已断开连接", foreground="gray")
@@ -645,6 +657,7 @@ class CANHostGUI:
             if self.controller.init_can(config, can_index):
                 self.btn_send.config(state=tk.NORMAL)
                 self.btn_clear_buffer.config(state=tk.NORMAL)
+                self.btn_time.config(state=tk.NORMAL)  # 启用时间按钮
                 
                 # 自动开始接收
                 self.controller.start_receive()
@@ -672,10 +685,19 @@ class CANHostGUI:
             except ValueError:
                 messagebox.showerror("错误", "数据格式错误！")
                 return
-            
+            self._on_send_cmd(frame_id, data_str)
+        except Exception as e:
+            messagebox.showerror("错误", f"发送数据时出错: {str(e)}")
+    
+    def _on_send_cmd(self, can_id: int, can_data: str):
+        try:
+            # 固定参数
+            frame_id = can_id
+            data = hex_to_bytes(can_data)
+
             # 从设置中获取发送参数
             settings = self._comm_settings
-            
+
             # 创建CAN帧
             msg = VCI_CAN_OBJ(
                 ID=frame_id,
@@ -685,10 +707,10 @@ class CANHostGUI:
                 DataLen=len(data),
                 Data=data
             )
-            
+
             if self.controller.transmit(msg):
                 self.lbl_tx_count.config(text=f"发送: {self.controller.tx_count}")
-                
+
                 # 添加到显示
                 self._add_message_to_display(
                     "TX",
@@ -756,6 +778,67 @@ class CANHostGUI:
         if hasattr(self, 'logger') and self.logger:
             self.logger.log(msg_type, frame_id, frame_format, data_type, length, data)
     
+    def _create_context_menu(self):
+        """创建右键菜单"""
+        self.context_menu = tk.Menu(self.root, tearoff=0)
+        self.context_menu.add_command(label="复制", command=self._on_copy_selection)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="复制帧ID", command=lambda: self._on_copy_column('id'))
+        self.context_menu.add_command(label="复制数据", command=lambda: self._on_copy_column('data'))
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="全选", command=self._on_select_all)
+
+        # 绑定右键菜单
+        self.tree_data.bind('<Button-3>', self._show_context_menu)  # Windows/Linux
+        self.tree_data.bind('<Button-2>', self._show_context_menu)  # macOS
+
+    def _show_context_menu(self, event):
+        """显示右键菜单"""
+        # 选择点击的行
+        item = self.tree_data.identify_row(event.y)
+        if item:
+            # 如果点击的行不在当前选择中，则清除其他选择并选择该行
+            if item not in self.tree_data.selection():
+                self.tree_data.selection_set(item)
+        self.context_menu.post(event.x_root, event.y_root)
+
+    def _on_copy_selection(self, event=None):
+        """复制选中的行到剪贴板"""
+        selected = self.tree_data.selection()
+        if not selected:
+            return
+
+        lines = []
+        for item in selected:
+            values = self.tree_data.item(item, 'values')
+            # 格式：时间 | 类型 | 帧ID | 格式 | 帧类型 | 长度 | 数据
+            line = ' | '.join(str(v) for v in values)
+            lines.append(line)
+
+        # 复制到剪贴板
+        self.root.clipboard_clear()
+        self.root.clipboard_append('\n'.join(lines))
+
+    def _on_copy_column(self, column: str):
+        """复制指定列的数据"""
+        selected = self.tree_data.selection()
+        if not selected:
+            return
+
+        col_index = self.tree_data['columns'].index(column)
+        values = []
+        for item in selected:
+            item_values = self.tree_data.item(item, 'values')
+            values.append(str(item_values[col_index]))
+
+        self.root.clipboard_clear()
+        self.root.clipboard_append('\n'.join(values))
+
+    def _on_select_all(self):
+        """全选所有行"""
+        all_items = self.tree_data.get_children()
+        self.tree_data.selection_set(all_items)
+
     def _on_clear_display(self):
         """清空显示"""
         for item in self.tree_data.get_children():
@@ -784,31 +867,7 @@ class CANHostGUI:
         if hasattr(self, 'logger') and self.logger:
             self.logger.close()
         self.root.destroy()
-
-class FileDialog(tk.Toplevel):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.parent = parent
-        self.title("文件对话框")
-        self.geometry("300x150")
-        self.resizable(False, False)
-        self.create_widgets()
-    def create_widgets(self):
-        self.label = ttk.Label(self, text="请选择要操作的文件")
-        self.label.pack(pady=10)
-        self.entry = ttk.Entry(self, width=30)
-        self.entry.pack(pady=10)
-        self.btn = ttk.Button(self, text="选择文件", command=self._on_file_select)
-        self.btn.pack(pady=10)
-    def _on_file_select(self):
-        """选择文件"""
-        self.filename = filedialog.askopenfilename()
-        self.entry.delete(0, tk.END)
-        self.entry.insert(0, self.filename)
-        self.destroy()
-    def get_filename(self):
-        """获取选择的文件名"""
-        return self.filename
+        
 def main():
     """主函数"""
     root = tk.Tk()
