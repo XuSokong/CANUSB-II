@@ -1,0 +1,59 @@
+***  Installation Started 10/13/2009 21:29  ***
+Title: ZLGCANTest通用测试软件 V1.62 Installation
+Source: C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\Rar$EX00.250\ZLGCANTest_Setup162.EXE | 11-20-2008 | 14:20:16 | 1925140
+Made Dir: C:\Program Files\ZLGCANTest
+File Copy: C:\Program Files\ZLGCANTest\UNWISE.EXE | 07-26-2002 | 17:02:06 | | 153088 | 5be5019b
+RegDB Key: Software\Microsoft\Windows\CurrentVersion\Uninstall\ZLGCANTest通用测试软件 V1.62
+RegDB Val: ZLGCANTest通用测试软件 V1.62
+RegDB Name: DisplayName
+RegDB Root: 2
+RegDB Key: Software\Microsoft\Windows\CurrentVersion\Uninstall\ZLGCANTest通用测试软件 V1.62
+RegDB Val: C:\PROGRA~1\ZLGCAN~1\UNWISE.EXE C:\PROGRA~1\ZLGCAN~1\INSTALL.LOG
+RegDB Name: UninstallString
+RegDB Root: 2
+Made Dir: C:\Program Files\ZLGCANTest\testdlls
+File Copy: C:\Program Files\ZLGCANTest\testdlls\CANET_TCP_TEST.dll | 06-16-2008 | 10:21:04 | 1.0.1.1 | 24576 | 2a7cc8d0
+Made Dir: C:\Program Files\ZLGCANTest\kerneldlls
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\CANET_TCP.dll | 06-16-2008 | 09:41:16 | 1.0.1.1 | 212992 | 4a5d53e5
+File Copy: C:\Program Files\ZLGCANTest\update.txt | 07-09-2008 | 17:03:54 | | 472 | 44cb6971
+File Copy: C:\Program Files\ZLGCANTest\Manual.pdf | 09-08-2006 | 09:02:38 | | 1001896 | f23dc6ba
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\PC104C2.dll | 06-16-2005 | 12:32:34 | 1.0.0.1 | 45056 | 63710bae
+File Copy: C:\Program Files\ZLGCANTest\testdlls\CANETE_TEST.dll | 01-19-2005 | 10:13:08 | 1.0.0.1 | 28672 | e767d0ce
+File Copy: C:\Program Files\ZLGCANTest\testdlls\canetepro.ini | 01-19-2005 | 10:15:54 | | 138 | 6ee6f6aa
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\PC104CAN.dll | 10-09-2004 | 14:36:42 | 1.0.0.1 | 57344 | bd16ac0
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\CANETE.dll | 08-03-2007 | 14:22:52 | 1.0.0.1 | 163840 | 50757a4f
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\gisadll.dll | 12-18-2003 | 09:49:40 | | 40960 | fdcdd0ea
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\isa5420.dll | 12-18-2003 | 09:50:56 | | 45056 | 37a12755
+File Copy: C:\Program Files\ZLGCANTest\ZLGCANTest.exe | 11-20-2008 | 14:18:52 | 1.6.0.0 | 253952 | 9e1b53aa
+File Copy: C:\Program Files\ZLGCANTest\ControlCAN.dll | 08-14-2003 | 08:50:02 | | 40960 | 6518b991
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\kerneldll.ini | 11-20-2008 | 14:01:28 | | 307 | 4bee9b97
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\CAN232.dll | 12-10-2004 | 14:52:28 | | 53248 | 7bbe6523
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\usbcan.dll | 08-28-2008 | 10:36:18 | | 36864 | 4261d2e5
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\gpcidll.dll | 10-23-2003 | 09:28:30 | | 40960 | 72339eba
+File Copy: C:\Program Files\ZLGCANTest\kerneldlls\PCI5121.dll | 12-17-2003 | 09:09:26 | | 53248 | cc702b5b
+File Copy: C:\Program Files\ZLGCANTest\testdlls\ZLGCANTest.ini | 11-20-2008 | 14:10:40 | | 794 | b05d99ca
+File Copy: C:\Program Files\ZLGCANTest\testdlls\CAN232_TEST.dll | 08-22-2003 | 15:16:38 | 1.0.0.1 | 28672 | e0fccf2a
+File Copy: C:\Program Files\ZLGCANTest\testdlls\PCI9820_TEST.dll | 08-14-2007 | 14:18:10 | 1.0.0.1 | 32768 | 12ee9084
+File Copy: C:\Program Files\ZLGCANTest\testdlls\USBCAN_TEST.dll | 08-14-2007 | 14:18:34 | 1.0.0.1 | 32768 | 78d676ff
+File Copy: C:\Program Files\ZLGCANTest\testdlls\PCI51XX_TEST.dll | 08-14-2007 | 14:17:12 | 1.0.0.1 | 32768 | 4e5ce2ad
+Shell Link: C:\Documents and Settings\Administrator\「开始」菜单\程序\ZLGCANTest\ZLGCANTest.lnk
+Link Info: C:\Program Files\ZLGCANTest\ZLGCANTest.exe | C:\PROGRA~1\ZLGCAN~1 | C:\PROGRA~1\ZLGCAN~1\ZLGCANTest.exe | 0 | 1 | 0 | 
+Shell Link: C:\Documents and Settings\Administrator\「开始」菜单\程序\ZLGCANTest\卸载ZLGCANTest.lnk
+Link Info: C:\Program Files\ZLGCANTest\UNWISE.EXE |  |  | 0 | 1 | 0 | 
+Shell Link: C:\Documents and Settings\Administrator\桌面\ZLGCANTest.lnk
+Link Info: C:\Program Files\ZLGCANTest\ZLGCANTest.exe | C:\PROGRA~1\ZLGCAN~1 | C:\PROGRA~1\ZLGCAN~1\ZLGCANTest.exe | 0 | 1 | 0 | 
+Made Dir: C:\Documents and Settings\Administrator\「开始」菜单\程序\ZLGCANTest
+Shell Link: C:\Documents and Settings\Administrator\「开始」菜单\程序\ZLGCANTest\使用手册.lnk
+Link Info: C:\Program Files\ZLGCANTest\UNWISE.EXE | C:\PROGRA~1\ZLGCAN~1 | C:\PROGRA~1\ZLGCAN~1\Manual.pdf | 0 | 1 | 0 | /W1 "C:\Program Files\ZLGCANTest\INSTALL.LOG"
+File Tree: C:\PROGRA~1\ZLGCAN~1\
+RegDB Key: Software\Microsoft\Windows\CurrentVersion\Uninstall\ZLGCANTest通用测试软件 V1.62
+RegDB Val: C:\PROGRA~1\ZLGCAN~1\ZLGCANTest.exe,-0
+RegDB Name: DisplayIcon
+RegDB Root: 2
+Could not Self-Register: C:\Program Files\ZLGCANTest\testdlls\CANET_TCP_TEST.dll
+Could not Self-Register: C:\Program Files\ZLGCANTest\testdlls\CANETE_TEST.dll
+Could not Self-Register: C:\Program Files\ZLGCANTest\testdlls\CAN232_TEST.dll
+Could not Self-Register: C:\Program Files\ZLGCANTest\testdlls\PCI9820_TEST.dll
+Could not Self-Register: C:\Program Files\ZLGCANTest\testdlls\USBCAN_TEST.dll
+Could not Self-Register: C:\Program Files\ZLGCANTest\testdlls\PCI51XX_TEST.dll
+User Rights: Admin
