@@ -12,6 +12,16 @@ import platform
 import sys
 
 
+def get_program_dir():
+    """获取程序所在目录，兼容开发环境和 PyInstaller 打包后的 exe"""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller 打包后的 exe
+        return os.path.dirname(sys.executable)
+    else:
+        # 开发环境
+        return os.path.dirname(os.path.abspath(__file__))
+
+
 def check_python_architecture():
     """检查Python架构是否与DLL兼容"""
     arch = platform.architecture()[0]
@@ -92,9 +102,10 @@ class CANInterface:
         
         if dll_path is None:
             # 尝试在不同目录查找DLL
+            program_dir = get_program_dir()
             possible_paths = [
-                os.path.join(os.path.dirname(__file__), 'CAN_TO_USB.dll'),
-                os.path.join(os.path.dirname(__file__), '..', 'CAN_TO_USB.dll'),
+                os.path.join(program_dir, 'CAN_TO_USB.dll'),
+                os.path.join(program_dir, '..', 'CAN_TO_USB.dll'),
                 'CAN_TO_USB.dll',
                 os.path.join('..', 'CAN_TO_USB.dll'),
             ]

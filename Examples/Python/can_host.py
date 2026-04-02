@@ -9,10 +9,21 @@ from tkinter import ttk, messagebox, filedialog
 import threading
 import time
 import os
+import sys
 from datetime import datetime
 from typing import Optional, Callable
 
 from can_interface import CANInterface, VCI_INIT_CONFIG, VCI_CAN_OBJ, bytes_to_hex, hex_to_bytes
+
+
+def get_program_dir():
+    """获取程序所在目录，兼容开发环境和 PyInstaller 打包后的 exe"""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller 打包后的 exe
+        return os.path.dirname(sys.executable)
+    else:
+        # 开发环境
+        return os.path.dirname(os.path.abspath(__file__))
 
 
 class CANLogger:
@@ -27,7 +38,7 @@ class CANLogger:
         """
         if log_dir is None:
             # 获取程序所在目录
-            program_dir = os.path.dirname(os.path.abspath(__file__))
+            program_dir = get_program_dir()
             self.log_dir = os.path.join(program_dir, 'log')
         else:
             self.log_dir = log_dir
@@ -146,9 +157,10 @@ class CANController:
             
             # 尝试查找DLL
             if dll_path is None:
+                program_dir = get_program_dir()
                 possible_paths = [
-                    os.path.join(os.path.dirname(__file__), 'CAN_TO_USB.dll'),
-                    os.path.join(os.path.dirname(__file__), '..', 'CAN_TO_USB.dll'),
+                    os.path.join(program_dir, 'CAN_TO_USB.dll'),
+                    os.path.join(program_dir, '..', 'CAN_TO_USB.dll'),
                     'CAN_TO_USB.dll',
                 ]
                 for path in possible_paths:
@@ -311,12 +323,15 @@ class CANHostGUI:
         self.btn_connect_toggle = ttk.Button(self.frame_connection, text="连接设备", command=self._on_toggle_connection, width=12)
         self.btn_connect_toggle.pack(side=tk.LEFT, padx=20, pady=5)
         
-        # 时间按钮 - 发送固定时间数据
-        self.btn_time = ttk.Button(self.frame_connection, text="时间", 
-                                   command=lambda: self._on_send_cmd(0x00F, "00 02 03 04 05 06 00 01"), 
-                                   state=tk.DISABLED, width=10)
-        self.btn_time.pack(side=tk.LEFT, padx=10, pady=5)
+        # 快捷命令按钮 - 发送固定CAN数据
+        self.cmd_buttons = []  # 存储所有命令按钮以便批量操作
         
+        btn_time = ttk.Button(self.frame_connection, text="快捷按钮",
+                              command=lambda: self._on_send_cmd(0x00F, "00 02 03 04 05 06 00 01"),
+                              state=tk.DISABLED, width=10)
+        btn_time.pack(side=tk.LEFT, padx=5, pady=5)
+        self.cmd_buttons.append(btn_time)
+
         # 初始化通信设置默认值（用于对话框）
         self._comm_settings = {
             'dev_index': 0,
@@ -373,7 +388,7 @@ class CANHostGUI:
         self.tree_data.column('format', width=60, anchor=tk.CENTER)
         self.tree_data.column('dtype', width=60, anchor=tk.CENTER)
         self.tree_data.column('length', width=50, anchor=tk.CENTER)
-        self.tree_data.column('data', width=300, anchor=tk.W)
+        self.tree_data.column('data', width=300, anchor=tk.CENTER)
         
         scrollbar_y = ttk.Scrollbar(self.frame_data, orient=tk.VERTICAL, command=self.tree_data.yview)
         scrollbar_x = ttk.Scrollbar(self.frame_data, orient=tk.HORIZONTAL, command=self.tree_data.xview)
@@ -610,7 +625,9 @@ class CANHostGUI:
             
             self.btn_send.config(state=tk.DISABLED)
             self.btn_clear_buffer.config(state=tk.DISABLED)
-            self.btn_time.config(state=tk.DISABLED)  # 禁用时间按钮
+            # 禁用所有快捷命令按钮
+            for btn in self.cmd_buttons:
+                btn.config(state=tk.DISABLED)
             
             # 更新状态栏
             self.lbl_status_info.config(text="已断开连接", foreground="gray")
@@ -657,7 +674,9 @@ class CANHostGUI:
             if self.controller.init_can(config, can_index):
                 self.btn_send.config(state=tk.NORMAL)
                 self.btn_clear_buffer.config(state=tk.NORMAL)
-                self.btn_time.config(state=tk.NORMAL)  # 启用时间按钮
+                # 启用所有快捷命令按钮
+                for btn in self.cmd_buttons:
+                    btn.config(state=tk.NORMAL)
                 
                 # 自动开始接收
                 self.controller.start_receive()
@@ -867,10 +886,36 @@ class CANHostGUI:
         if hasattr(self, 'logger') and self.logger:
             self.logger.close()
         self.root.destroy()
-        
+
+def set_taskbar_icon():
+    """设置 Windows 任务栏图标"""
+    if sys.platform == 'win32':
+        try:
+            import ctypes
+            # 设置应用程序用户模型 ID，确保任务栏显示正确图标
+            app_id = 'CAN_USB_Host.Application'
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+        except Exception:
+            pass
+
+
 def main():
     """主函数"""
+    # 设置任务栏图标
+    set_taskbar_icon()
+
     root = tk.Tk()
+
+    # 设置窗口图标（如果存在）
+    icon_path = os.path.join(get_program_dir(), 'USBCAN.ico')
+    if not os.path.exists(icon_path):
+        icon_path = 'USBCAN.ico'  # 尝试当前目录
+    if os.path.exists(icon_path):
+        try:
+            root.iconbitmap(icon_path)
+        except Exception:
+            pass
+
     app = CANHostGUI(root)
     root.protocol("WM_DELETE_WINDOW", app.on_closing)
     root.mainloop()
