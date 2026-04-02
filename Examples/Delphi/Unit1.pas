@@ -1,0 +1,272 @@
+unit Unit1;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs,  StdCtrls, CAN_TO_USB;
+
+type
+  TForm1 = class(TForm)
+    ComboBox2: TComboBox;
+    Button1: TButton;
+    Button2: TButton;
+    GroupBox1: TGroupBox;
+    Label3: TLabel;
+    Label4: TLabel;
+    Label5: TLabel;
+    Label6: TLabel;
+    Label7: TLabel;
+    Button5: TButton;
+    GroupBox2: TGroupBox;
+    Label9: TLabel;
+    ComboBox5: TComboBox;
+    ComboBox6: TComboBox;
+    ComboBox7: TComboBox;
+    Edit1: TEdit;
+    Edit4: TEdit;
+    GroupBox6: TGroupBox;
+    ListBox1: TListBox;
+    GroupBox3: TGroupBox;
+    Label1: TLabel;
+    Edit2: TEdit;
+    Edit3: TEdit;
+    Label2: TLabel;
+    Label12: TLabel;
+    Label13: TLabel;
+    ComboBox3: TComboBox;
+    ComboBox4: TComboBox;
+    Button3: TButton;
+    Label8: TLabel;
+    ComboBox8: TComboBox;
+    Label10: TLabel;
+    Edit5: TEdit;
+    Label11: TLabel;
+    Edit6: TEdit;
+    procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure Button3Click(Sender: TObject);
+
+  private
+    { Private declarations }
+  public
+
+  end;
+  
+PTListBox=^TListBox;
+var
+  Form1: TForm1;
+var
+    m_devtype : DWORD;
+    m_devind : DWORD;
+    m_cannum : DWORD;
+    m_connect : DWORD;
+    m_threadhandle : integer;
+implementation
+
+{$R *.dfm}
+function ReceiveThread(param : Pointer): integer;
+var
+receivedata : array[0..200] of VCI_CAN_OBJ;
+Len : integer;
+j : integer;
+i : integer;
+str : AnsiString;
+tmpstr :AnsiString;
+box : PTListBox;
+DevSn: array[0..3] of char;
+
+begin
+  box:=param;
+
+   while TRUE do
+    begin
+      if m_connect=0 then
+        break;
+      //Sleep(1);
+      Len:=VCI_Receive(m_devind,m_cannum,@receivedata[0],50,200);
+      if Len>0 then
+      for i:=0 to Len-1 do
+        begin
+          str:= DevSn[0]+DevSn[1]+DevSn[2]+DevSn[3];
+	    		str:='设备'+IntToStr(m_devind)+ 
+               ' 通道CAN'+IntToStr(m_cannum)+
+               ' 接收到数据帧:  ';
+
+			    tmpstr:='帧ID:0x'+IntToHex(receivedata[i].ID,8)+' ';
+			    str:=str+tmpstr;
+
+          str:=str+'帧类型:';
+			    if receivedata[i].ExternFlag=0 then
+    				tmpstr:='标准帧 '
+    			else
+		    		tmpstr:='扩展帧 ';
+    			str:=str+tmpstr;
+
+			    str:=str+'帧格式:';
+			    if receivedata[i].RemoteFlag=0 then
+				    tmpstr:='数据帧 '
+			    else
+				    tmpstr:='远程帧 ';
+    			str:=str+tmpstr;
+
+    			box.Items.Add(str);
+	    		if receivedata[i].RemoteFlag=0 then
+          begin
+    				str:='数据:';
+            if receivedata[i].DataLen>8 then
+              receivedata[i].DataLen:=8;
+    				for j:=0 to receivedata[i].DataLen-1 do
+              begin
+      					tmpstr:=IntToHex(receivedata[i].Data[j],2)+' ';
+	      				str:=str+tmpstr;
+              end;
+   			     	box.Items.Add(str);
+          end;
+        end;
+	  	box.ItemIndex:=box.Items.Count-1; 
+
+    end;
+
+  EndThread(0);
+  ReceiveThread:=0;
+end;
+
+procedure TForm1.Button1Click(Sender: TObject);
+var
+cannum: integer;
+devind: integer;
+initconfig : VCI_INIT_CONFIG;
+threadid: LongWord;
+begin
+cannum:=ComboBox2.ItemIndex;
+devind:=ComboBox8.ItemIndex;
+
+if m_connect=1 then
+  begin
+    m_connect:=0;
+    WaitForSingleObject(m_threadhandle,2000);
+    Button1.Caption:='连接';
+    VCI_CloseDevice(m_devind);
+    Exit;
+  end;
+if (cannum>=0)  then
+  begin
+    if VCI_OpenDevice(devind)=0 then
+      ShowMessage('端口打开失败')
+    else
+      begin
+        initconfig.AccCode:=StrToInt('0x'+Edit2.Text);
+        initconfig.AccMask:=StrToInt('0x'+Edit3.Text);
+        initconfig.Timing0 :=StrToInt('0x'+Edit5.Text);
+        initconfig.Timing1 :=StrToInt('0x'+Edit6.Text);
+
+        initconfig.Filter:=ComboBox3.ItemIndex;
+        initconfig.Mode:=ComboBox4.ItemIndex;
+        if VCI_InitCAN(devind,cannum,@initconfig)<>1 then
+          begin
+            Showmessage('初始化CAN失败');
+            Exit;
+          end;
+        m_cannum:=cannum;
+        m_devind:=devind;
+        m_connect:=1;
+        Button1.Caption:='断开';
+
+
+        threadid:=111;
+        m_threadhandle:=BeginThread(0,0,ReceiveThread,@ListBox1,0,threadid);
+      end;
+
+  end
+else
+  ShowMessage('选项不能为空');
+end;
+
+procedure TForm1.Button2Click(Sender: TObject);
+begin
+  if m_connect=0 then
+    Exit;
+  if VCI_ResetCAN(m_devind,m_cannum)<>1 then
+    ShowMessage('复位CAN失败')
+  else
+    ListBox1.Items.Add('复位CAN成功');
+
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  m_cannum :=0;
+  m_connect:= 0;
+
+  ComboBox2.ItemIndex:=0;
+  ComboBox3.ItemIndex:=0;
+  ComboBox4.ItemIndex:=0;
+  ComboBox5.ItemIndex:=1;
+  ComboBox6.ItemIndex:=0;
+  ComboBox7.ItemIndex:=0;
+  ComboBox8.ItemIndex:=0;
+end;
+
+procedure TForm1.Button5Click(Sender: TObject);
+var
+sendtype,frametype,frameformat : BYTE;
+id : DWORD;
+data : array[0..7] of BYTE;
+str : AnsiString;
+strdata : AnsiString;
+senddata : VCI_CAN_OBJ;
+i : integer;
+begin
+  if m_connect=0 then
+    Exit;
+
+
+  sendtype:=ComboBox5.ItemIndex;
+  frametype:=ComboBox6.ItemIndex;
+  frameformat:=ComboBox7.ItemIndex;
+  id:=StrToInt('0x'+Edit1.Text);
+  str:=Edit4.Text;
+  for i:=0 to 7 do
+    begin
+      strdata:=Copy(str,3*i+1,2);
+      strdata:=Trim(strdata);
+      if Length(strdata)=0 then
+        break;
+      data[i]:=StrToInt('0x'+strdata);
+    end;
+
+  senddata.SendType:=sendtype;
+  senddata.ExternFlag:=frametype;
+  senddata.RemoteFlag:=frameformat;
+  senddata.ID:=id;
+  senddata.DataLen:=i;
+
+  Move(data,senddata.Data,i);
+  if VCI_Transmit(m_devind,m_cannum,@senddata)=1 then
+    ListBox1.Items.Add('发送成功')
+  else
+    ListBox1.Items.Add('发送失败');
+end;
+
+procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  if m_connect=1 then
+  begin
+    m_connect:=0;
+    WaitForSingleObject(m_threadhandle,2000);
+    m_threadhandle:=0;
+    VCI_CloseDevice(m_devind);
+  end
+end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+begin
+ ListBox1.Clear ;
+end;
+
+end.

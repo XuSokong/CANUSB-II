@@ -1,0 +1,85 @@
+unit CAN_TO_USB;
+
+interface
+
+uses
+  WinTypes;
+
+const
+  DLL_NAME  = 'CAN_TO_USB.dll';//动态库名称
+
+type
+
+//声明各个数据结构
+
+
+//1.定义初始化CAN的数据类型
+VCI_INIT_CONFIG = Record
+	AccCode  : DWORD;
+	AccMask  : DWORD;
+	Reserved : DWORD;
+  Filter   : UCHAR;
+	Timing0 : UCHAR;
+  Timing1 : UCHAR;
+	Mode     : UCHAR;
+END;
+
+P_PCI58XX_INIT_CONFIG = ^VCI_INIT_CONFIG;
+
+//2.定义CAN信息帧的数据类型。
+VCI_CAN_OBJ = Record
+	ID         : UINT;
+	SendType   : BYTE;
+  ExternFlag : BYTE;//是否是扩展帧
+	RemoteFlag : BYTE;//是否是远程帧
+	DataLen    : BYTE;
+	Data       : array[0..7] of BYTE;
+END;
+
+P_VCI_CAN_OBJ = ^VCI_CAN_OBJ;
+                    
+//导入动态库函数
+
+//打开设备
+function VCI_OpenDevice (DevIndex: DWORD )  : ULONG;
+  stdcall;
+  external DLL_NAME;
+
+//关闭设备
+function VCI_CloseDevice (DevIndex: DWORD) : ULONG;
+  stdcall;
+  external DLL_NAME;
+
+//初始化设备
+function VCI_InitCan ( DevIndex: DWORD;
+                           CANIndex : DWORD;
+                           InitConfig : P_VCI_INIT_CONFIG) : ULONG;
+  stdcall;
+  external DLL_NAME;
+
+//复位设备
+function VCI_ResetCan ( DevIndex: DWORD;CANIndex : DWORD) : ULONG;
+  stdcall;
+  external DLL_NAME;
+
+//发送数据
+function VCI_Transmit ( DevIndex: DWORD;
+                            CANIndex : DWORD;
+                            SendData : P_VCI_CAN_OBJ
+                          ) : ULONG;
+  stdcall;
+  external DLL_NAME;
+
+//接受数据
+function VCI_Receive (  DevIndex: DWORD;
+                            CANIndex : DWORD;
+                            pReceive : P_VCI_CAN_OBJ;
+                            Len      : DWORD;
+                            WaitTime : DWORD
+                          ) : ULONG;
+  stdcall;
+  external DLL_NAME;
+
+implementation
+
+end.
