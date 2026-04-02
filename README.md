@@ -1,6 +1,11 @@
 # CANUSB-II
-[工业级双路](http://www.embedded-soc.com/service/s.asp?id=1)
 **整理相关资料，并编写Python上位机**
+
+
+[工业级双路](http://www.embedded-soc.com/service/s.asp?id=1)
+
+
+
 Dll     :  各个开发环境的lib和dll
 
 Document:  用户手册以及驱动安装步骤详解
